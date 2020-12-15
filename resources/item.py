@@ -1,64 +1,47 @@
 import sqlite3
 from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
+from models.item import ItemModel
 
 
 class Item(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument('price',
-                        type=float,
-                        required=True,
-                        help="This field cannot be left blank!"
+                    type=float,
+                    required=True,
+                    help="This field cannot be left blank!"
                 )
     @jwt_required()
     def get(self, name):
-        item = self.find_by_name(name)
+        item = ItemModel.find_by_name(name)
         if item:
-            return item
-        return {'message' : 'Item not found'}, 404
+            return item.json()
+        return {'message': 'Item not found'}, 404
 
         #item = next(filter(lambda x: x['name'] == name, items), None)
         #return {'item': item}, 200 if item else 404
         #return {next(filter(lambda x: x['name'] == name, items), None)}
-    @classmethod
-    def find_by_name(cls, name):
-        connection = sqlite3.connect('data.db')
-        cursor = connection.cursor()
 
-        query = "SELECT * FROM items WHERE name=?"
-        result = cursor.execute(query, (name,))
-        row = result.fetchone()
-        connection.close()
-
-        if row:
-            return {'item': {'name': row[0], 'price': row[1]}}
 
     def post(self, name):
-        if self.find_by_name(name):
+        if ItemModel.find_by_name(name):
             return {'message': "An item with name '{}' already exist.".format(name)}, 400
         #if next(filter(lambda x: x['name'] == name, items), None):
             #return {'message': "An item with name '{}' already exist.".format(name)}, 400
 
         data = Item.parser.parse_args()
         #data = request.get_json()
-        item = {'name': name, 'price': data['price']}
+        ## item = {'name': name, 'price': data['price']}
+        item = ItemModel(name, data['price'])
 
         try:
-            self.insert(item)
+            item.insert()
+            ##ItemModel.insert(item)
         except:
             return {"message": "An error occurred inserting the item."}, 500  # Internal Server Error
-        return item, 201
+        return item.json(), 201
 
-    @classmethod
-    def insert(cls, item):
-        connection = sqlite3.connect('data.db')
-        cursor = connection.cursor()
 
-        query = "INSERT INTO items VALUES (?,?)"
-        cursor.execute(query, (item['name'], item['price']))
-
-        connection.commit()
-        connection.close()
 
     def delete(self, name):
         connection = sqlite3.connect('data.db')
@@ -79,35 +62,28 @@ class Item(Resource):
         data = Item.parser.parse_args()
         #data = request.get_json()
         #item = next(filter(lambda x: x['name'] == name, items), None)
-        item = self.find_by_name(name)
-        updated_item = {'name' : name, 'price' : data['price']}
+
+        item = ItemModel.find_by_name(name)  # BU ZATEN VERİTABANINDAKİ OLAN İTEM, TAKİP EDİLİNCE DE "*" YAZAN YERE YAZILMASININ MANTIĞI YOK
+        ##updated_item = {'name': name, 'price': data['price']}
+        updated_item = ItemModel(name, data['price'])
 
         if item is None:
             #item = {'name': name, 'price': data['price']}
             #items.append(item)
+            updated_item.insert()
             try:
-                self.insert(updated_item)
+                ItemModel.insert(updated_item)
             except:
                 return {"message": "An error occured inserting the item."},500
         else:
             #item.update(data)
             try:
-                self.update(updated_item)
+                #ItemModel.update(updated_item)
+                updated_item.update() # "*"
             except:
                 return {"message": "An error occured updating the item."}, 500
-        return updated_item
-
-    @classmethod
-    def update(cls,item):
-        connection = sqlite3.connect('data.db')
-        cursor = connection.cursor()
-
-        query = "UPDATE items SET price=? WHERE name=?"
-        cursor.execute(query, (item['price'], item['name']))
-
-        connection.commit()
-        connection.close()
-
+        #return updated_item
+        return updated_item.json()
 
 # class ItemList(Resource):
 #     def get(self):
