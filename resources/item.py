@@ -35,7 +35,7 @@ class Item(Resource):
         item = ItemModel(name, data['price'])
 
         try:
-            item.insert()
+            item.save_to_db()
             ##ItemModel.insert(item)
         except:
             return {"message": "An error occurred inserting the item."}, 500  # Internal Server Error
@@ -44,14 +44,15 @@ class Item(Resource):
 
 
     def delete(self, name):
-        connection = sqlite3.connect('data.db')
-        cursor = connection.cursor()
-
-        query = "DELETE FROM items WHERE name=?"
-        cursor.execute(query, (name,))
-
-        connection.commit()
-        connection.close()
+        item = ItemModel.find_by_name(name)
+        if item:
+            item.delete_from_db()
+        ##connection = sqlite3.connect('data.db')
+        ##cursor = connection.cursor()
+        ##query = "DELETE FROM items WHERE name=?"
+        ##cursor.execute(query, (name,))
+        ##connection.commit()
+        ##connection.close()
 
         #global items
         #items = list(filter(lambda x: x['name'] != name, items))
@@ -65,25 +66,15 @@ class Item(Resource):
 
         item = ItemModel.find_by_name(name)  # BU ZATEN VERİTABANINDAKİ OLAN İTEM, TAKİP EDİLİNCE DE "*" YAZAN YERE YAZILMASININ MANTIĞI YOK
         ##updated_item = {'name': name, 'price': data['price']}
-        updated_item = ItemModel(name, data['price'])
+        ###updated_item = ItemModel(name, data['price'])
 
+        #DÜZENLENDİ
         if item is None:
-            #item = {'name': name, 'price': data['price']}
-            #items.append(item)
-            updated_item.insert()
-            try:
-                ItemModel.insert(updated_item)
-            except:
-                return {"message": "An error occured inserting the item."},500
+            item = ItemModel(name, data['price'])
         else:
-            #item.update(data)
-            try:
-                #ItemModel.update(updated_item)
-                updated_item.update() # "*"
-            except:
-                return {"message": "An error occured updating the item."}, 500
-        #return updated_item
-        return updated_item.json()
+            item.price = data['price']
+        item.save_to_db()
+        return item.json()
 
 # class ItemList(Resource):
 #     def get(self):
@@ -91,14 +82,19 @@ class Item(Resource):
 
 class ItemList(Resource):
     def get(self):
-        connection = sqlite3.connect('data.db')
-        cursor = connection.cursor()
+        #return {'items': [item.json for item in ItemModel.query.all()]}  # ALT SATIR İLE AYNI DAHA BASİT HALİ
+        return {'items': [x.json() for x in ItemModel.query.all()]}
 
-        query = "SELECT * FROM items"
-        result = cursor.execute(query)
-        items = []
-        for row in result:
-            items.append({'name' : row[0], 'price' : row[1]})
 
-        connection.close()
-        return {'items' : items}
+
+        # connection = sqlite3.connect('data.db')
+        # cursor = connection.cursor()
+        #
+        # query = "SELECT * FROM items"
+        # result = cursor.execute(query)
+        # items = []
+        # for row in result:
+        #     items.append({'name' : row[0], 'price' : row[1]})
+        #
+        # connection.close()
+        # return {'items' : items}
