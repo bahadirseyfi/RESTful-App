@@ -11,6 +11,11 @@ class Item(Resource):
                     required=True,
                     help="This field cannot be left blank!"
                 )
+    parser.add_argument('store_id',
+                        type=int,
+                        required=True,
+                        help="Every item needs a store id."
+                        )
     @jwt_required()
     def get(self, name):
         item = ItemModel.find_by_name(name)
@@ -32,7 +37,7 @@ class Item(Resource):
         data = Item.parser.parse_args()
         #data = request.get_json()
         ## item = {'name': name, 'price': data['price']}
-        item = ItemModel(name, data['price'])
+        item = ItemModel(name, data['price'], data['store_id'])
 
         try:
             item.save_to_db()
@@ -70,7 +75,8 @@ class Item(Resource):
 
         #DÜZENLENDİ
         if item is None:
-            item = ItemModel(name, data['price'])
+            item = ItemModel(name, data['price'], data['store_id']) #Bunu Yazacağımıza şu şekilde de belirtebiliriz:
+            #ItemMode(name, **data)  Daha kolay gösterim
         else:
             item.price = data['price']
         item.save_to_db()
