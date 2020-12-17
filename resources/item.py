@@ -91,8 +91,6 @@ class ItemList(Resource):
         #return {'items': [item.json for item in ItemModel.query.all()]}  # ALT SATIR İLE AYNI DAHA BASİT HALİ
         return {'items': [x.json() for x in ItemModel.query.all()]}
 
-
-
         # connection = sqlite3.connect('data.db')
         # cursor = connection.cursor()
         #
